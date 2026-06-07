@@ -689,8 +689,6 @@ async def media_stream(websocket: WebSocket):
         if call_ended[0]:
             if not end_call_event.is_set():
                 end_call_event.set()
-            else:
-                return
         if silence_task[0] and not silence_task[0].done():
             silence_task[0].cancel()
         silence_task[0] = asyncio.create_task(silence_timeout())
