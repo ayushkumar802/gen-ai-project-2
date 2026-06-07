@@ -4,7 +4,7 @@ import warnings
 from sarvam_engine import SarvamVoicePool
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, HTTPException, WebSocket
 from starlette.websockets import WebSocketDisconnect
 import json
 import base64
@@ -60,6 +60,16 @@ app.include_router(call_router)
 app.include_router(version_router)
 app.include_router(engine_router)
 
+# at the top, outside media_stream
+_call_end_flags: dict[str, list] = {}
+
+@app.post("/end-call/{call_sid}")
+async def end_call(call_sid: str):
+    flag = _call_end_flags.get(call_sid)
+    if flag is None:
+        raise HTTPException(status_code=404, detail="No active call")
+    flag[0] = True
+    return {"status": "ok"}
 
 IDLE          = "IDLE"
 EARLY         = "EARLY"
@@ -633,7 +643,7 @@ async def media_stream(websocket: WebSocket):
             transcript_buffer[0].clear()
 
         async def _add_buffer():
-            transcript = await stt.get_transcript(initial_timeout=0.1)
+            transcript = await stt.get_transcript(initial_timeout=0.25)
             if transcript and transcript not in transcript_buffer[0]:
                 transcript_buffer[0].append(transcript)
             final_transcript = " ".join(transcript_buffer[0])
@@ -709,6 +719,8 @@ async def media_stream(websocket: WebSocket):
                     start_data.get("call_sid")
                     or start_data.get("callSid")
                 )
+
+                _call_end_flags[call_sid] = call_ended
 
                 print(f"[Server] Stream started: {stream_sid} | call_sid: {call_sid}")
 
