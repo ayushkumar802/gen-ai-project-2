@@ -395,7 +395,8 @@ async def media_stream(websocket: WebSocket):
         if call_ended[0]:
             if not end_call_event.is_set():
                 end_call_event.set()
-            return
+            else:
+                return
         # FIX-9: don't spawn new watchdog timers after call has ended
         if watchdog_task[0] and not watchdog_task[0].done():
             watchdog_task[0].cancel()
@@ -688,7 +689,8 @@ async def media_stream(websocket: WebSocket):
         if call_ended[0]:
             if not end_call_event.is_set():
                 end_call_event.set()
-            return
+            else:
+                return
         if silence_task[0] and not silence_task[0].done():
             silence_task[0].cancel()
         silence_task[0] = asyncio.create_task(silence_timeout())
